@@ -1,0 +1,5 @@
+﻿  PumpingLemma.cpp
+C:\Users\nasrr\source\repos\PumpingLemma\PumpingLemma\PumpingLemma.cpp(15,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\nasrr\source\repos\PumpingLemma\PumpingLemma\PumpingLemma.cpp(106,17): warning C4566: character represented by universal-character-name '\u274C' cannot be represented in the current code page (1252)
+C:\Users\nasrr\source\repos\PumpingLemma\PumpingLemma\PumpingLemma.cpp(109,17): warning C4566: character represented by universal-character-name '\u2705' cannot be represented in the current code page (1252)
+  PumpingLemma.vcxproj -> C:\Users\nasrr\source\repos\PumpingLemma\x64\Debug\PumpingLemma.exe
