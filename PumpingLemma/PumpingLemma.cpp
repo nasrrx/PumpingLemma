@@ -11,9 +11,12 @@ bool isL1(const string& s) {
     int i = 0;
     while (i < s.length() && s[i] == 'a') i++;
     int aCount = i;
-    while (i < s.length() && s[i] == 'b') i++;
-    int bCount = s.length() - aCount;
-    return (i == s.length() && aCount == bCount);
+
+    int j = i;
+    while (j < s.length() && s[j] == 'b') j++;
+    int bCount = j - i;
+
+    return (j == s.length() && aCount == bCount && aCount > 0);
 }
 
 // Language 2: a^n b^m c^n
@@ -31,11 +34,13 @@ bool isL2(const string& s) {
 
 // Language 3: (ab)^n
 bool isL3(const string& s) {
-    if (s.length() % 2 != 0) return false;
-    for (size_t i = 0; i < s.length(); i += 2) {
-        if (s[i] != 'a' || s[i + 1] != 'b') return false;
+    if (s.length() % 2 != 0) return false; // must be even length
+    for (size_t i = 0; i + 1 < s.length(); i += 2) {
+        if (s[i] != 'a' || s[i + 1] != 'b') {
+            return false;
+        }
     }
-    return true;
+    return true; // all (a,b) pairs matched
 }
 
 // Language 4: equal number of a’s and b’s (in any order)
@@ -48,7 +53,7 @@ bool isL4(const string& s) {
     return a == b;
 }
 
-// Language 5: a^m a^n
+// Language 5: a^m b^n ( M IS EVEN )
 bool isL5(const std::string& s) {
     int i = 0;
     while (i < s.length() && s[i] == 'a') i++;
@@ -77,36 +82,54 @@ void pumpingLemmaDemo(string word, int p) {
         return;
     }
 
-    bool disproved = false;
+    bool disproved = true; // // (Coding-wise: we assume all valid decompositions fail. 
+// If we find even one valid decomposition where pumping keeps the string in the language, 
+// then we fail to disprove regularity.)
 
-    for (int i = 1; i <= p; ++i) {
-        for (int j = i; j <= p; ++j) {
-            string x = word.substr(0, i);
-            string y = word.substr(i, j - i);
-            string z = word.substr(j);
+    for (int i = 0; i <= p; ++i) {
+        for (int j = i + 1; j <= p; ++j) {
+            string x = word.substr(0, i); //  x is the substring from position 0 up to (but not including) position i.
+            string y = word.substr(i, j - i); //  y is the substring starting at position i and of length (j - i).  , It immediately follows x, and must not overlap x. ( CANNOT BE EMPTY )
+            string z = word.substr(j); // // z = rest of the word from position j to the end
 
-            if (y.empty()) continue;
+            if (y.empty()) continue; // y must not be empty, If not empty, skips the iteration.
+
+            bool valid = true; // assume this decomposition is good
 
             cout << "\nTrying decomposition:\n";
             cout << "x = \"" << x << "\", y = \"" << y << "\", z = \"" << z << "\"\n";
 
-            for (int k = 0; k <= 3; ++k) {
-                string pumped = x + string(k, ' ').replace(0, k, y) + z;
+            for (int k = 0; k <= 3; ++k) { // how many times y is repeated at a given decomposition ( power of i ) - ( x * y^i * z should belong to A for every i > 0 )
+                string pumped = x;
+                for (int repeat = 0; repeat < k; ++repeat) {
+                    pumped += y;
+                }
+                pumped += z;
+
                 bool inLang = isInLanguage(pumped);
                 cout << "  i=" << k << ": " << pumped << (inLang ? " In L" : " Not in L") << endl;
+
                 if (k != 1 && !inLang) {
-                    disproved = true;
+                    valid = false; // if for some i != 1 it fails, this decomposition is bad - because i = 1 just returns the original string.
+                    break;
                 }
+            }
+
+            if (valid) {
+                disproved = false; // found a good decomposition
+                goto done;
             }
         }
     }
 
+done:
     cout << "\nResult: ";
     if (disproved) {
-        cout << "The language is NOT regular (irregular) ❌\n";
+        cout << "The language is NOT regular (proved by pumping lemma)\n";
     }
     else {
-        cout << "Could not disprove regularity using pumping lemma ✅\n";
+        cout << "Could NOT disprove regularity using pumping lemma.\n";
+        cout << "(Language could still be regular.)\n";
     }
 }
 
@@ -117,7 +140,7 @@ int chooseLanguage() {
         cout << "1. L = { a^n b^n | n => 0 }\n";
         cout << "2. L = { a^n b^m c^n | n, m => 0 }\n";
         cout << "3. L = { (ab)^n | n => 0 }\n";
-        cout << "4. L = { strings with equal number of a’s and b’s }\n";
+        cout << "4. L = { strings with equal number of a's and b's }\n";
         cout << "5. L = { a^m b^n | m, n => 0 and m is even }\n";
         cout << "Enter choice (1 - 5): ";
         cin >> choice;
@@ -134,24 +157,6 @@ int chooseLanguage() {
 }
 
 void getWordAndP(std::string& word, int& p) {
-    // Input word (only letters)
-    while (true) {
-        cout << "\nEnter a word from the language: ";
-        cin >> word;
-        bool valid = true;
-        for (char ch : word) {
-            if (!isalpha(ch) || !islower(ch)) {
-                valid = false;
-                break;
-            }
-        }
-        if (!valid) {
-            std::cout << "Invalid word. Use only lowercase letters a-z.\n";
-        }
-        else {
-            break;
-        }
-    }
 
     // Input pumping length (positive int)
     while (true) {
@@ -166,19 +171,49 @@ void getWordAndP(std::string& word, int& p) {
             break;
         }
     }
+
+    // Input word (only letters)
+    while (true) {
+        cout << "\nEnter a word from the language: ";
+        cin >> word;
+        bool valid = true;
+        if (word.length() < p || !isInLanguage(word)) {
+            valid = false;
+        }
+        for (char ch : word) {
+            if (!isalpha(ch) || !islower(ch)) {
+                valid = false;
+                break;
+            }
+        }
+        if (!valid) {
+            cout << "Word is too short or not in language\n\n";
+        }
+
+        else {
+            break;
+        }
+    }
 }
 
 int main() {
-    languageID = chooseLanguage();
-    string word;
-    int p;
-    getWordAndP(word, p);
-    pumpingLemmaDemo(word, p);
 
-    int x;
-    cout << "Enter any input to exit";
-    cin >> x;
+    while (true) {
+        languageID = chooseLanguage();
+        string word;
+        int p;
+        getWordAndP(word, p);
+        pumpingLemmaDemo(word, p);
 
+        char again;
+        cout << "\nDo you want to test another word? (y/n): ";
+        cin >> again;
+        if (again != 'y' && again != 'Y') {
+            break;
+        }
+    }
+
+    cout << "Program exited.\n";
     return 0;
 }
 
